@@ -1,17 +1,31 @@
+$board-size: 75vmin;
+
 #root {
-  width: 100%;
+  width: $board-size;
   height: 100%;
+  margin: 0 auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
+#status {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: calc($board-size / 14);
+}
+
 #board {
+  aspect-ratio: 1 / 1;
+  width: 100%;
   background-color: rgb(0, 120, 0);
   border: 1px solid black;
   display: grid;
-  grid-template-columns: repeat(8, 60px);
-  grid-template-rows: repeat(8, 60px);
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
 
   .cell {
     border: 1px solid black;
@@ -26,7 +40,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 40px;
+      font-size: calc($board-size / 14);
       cursor: default;
     }
 

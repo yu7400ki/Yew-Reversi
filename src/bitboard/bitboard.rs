@@ -206,4 +206,12 @@ impl Bitboard {
 
         vec
     }
+
+    pub fn count_black(&self) -> u32 {
+        self.black_board.count_ones()
+    }
+
+    pub fn count_white(&self) -> u32 {
+        self.white_board.count_ones()
+    }
 }
