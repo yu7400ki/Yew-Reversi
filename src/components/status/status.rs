@@ -14,9 +14,9 @@ pub fn cell(props: &StatusProps) -> Html {
 
     html! {
         <div id="status">
-            <p>{format!("●: {}", bitboard.count_black())}</p>
-            <p>{format!("ターン: {}", if bitboard.turn == Turn::Black {"●"} else {"○"})}</p>
-            <p>{format!("○: {}", bitboard.count_white())}</p>
+            <p>{format!("●:{}", bitboard.count_black())}</p>
+            <p>{format!("ターン:{}", if bitboard.turn == Turn::Black {"●"} else {"○"})}</p>
+            <p>{format!("○:{}", bitboard.count_white())}</p>
         </div>
     }
 }

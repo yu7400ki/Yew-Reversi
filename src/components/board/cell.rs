@@ -29,11 +29,8 @@ pub fn cell(props: &CellProps) -> Html {
                 match stone {
                     Stone::Black => html! {<p class="stone black">{"●"}</p>},
                     Stone::White => html! {<p class="stone white">{"●"}</p>},
-                    Stone::Empty(cnt) => if *cnt > 0 {
-                        html! {<p class="stone legal" {onclick}>{cnt}</p>}
-                    } else {
-                        html! {<p class="stone empty"></p>}
-                    },
+                    Stone::Legal(cnt) => html! {<p class="stone legal" {onclick}>{cnt}</p>},
+                    Stone::Empty => html! {<p class="stone empty"></p>},
                 }
             }
         </div>

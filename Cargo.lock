@@ -243,6 +243,7 @@ dependencies = [
 name = "reversi"
 version = "0.1.0"
 dependencies = [
+ "gloo-dialogs",
  "yew",
 ]
 

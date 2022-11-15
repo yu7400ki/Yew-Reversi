@@ -1,7 +1,8 @@
 use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
+use gloo_dialogs::alert;
 
 use crate::bitboard::bitboard::Bitboard;
-use crate::bitboard::types::Stone;
+use crate::bitboard::types::{Stone, Turn};
 use crate::components::board::cell::Cell;
 
 #[derive(Properties, PartialEq)]
@@ -18,7 +19,13 @@ pub fn board(props: &BoardProps) -> Html {
     let on_move_stone = {
         let board = board.clone();
         Callback::from(move |pos: i8| {
-            board.set(bitboard.move_stone(pos));
+            let next_board = bitboard.move_stone(pos);
+            if next_board.end {
+                alert(format!("黒: {} 白: {}", next_board.count_black(), next_board.count_white()).as_str());
+            } else if next_board.pass {
+                alert(format!("{}のターンがパスされました", if next_board.turn == Turn::Black {"白"} else {"黒"}).as_str());
+            }
+            board.set(next_board);
         })
     };
 
