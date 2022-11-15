@@ -3,9 +3,48 @@ use crate::bitboard::types::{Stone, Turn};
 struct Mask;
 
 impl Mask {
-    pub const VERTICAL: u64 = 0x7e7e7e7e7e7e7e7e;
-    pub const HORIZON: u64 = 0x00ffffffffffff00;
+    pub const VERTICAL: u64 = 0x00ffffffffffff00;
+    pub const HORIZON: u64 = 0x7e7e7e7e7e7e7e7e;
     pub const ALLSIDE: u64 = 0x007e7e7e7e7e7e00;
+}
+
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+    UpLeft,
+    UpRight,
+    DownLeft,
+    DownRight,
+}
+
+impl Direction {
+    fn to_mask(&self) -> u64 {
+        match self {
+            Direction::Up => Mask::VERTICAL,
+            Direction::Down => Mask::VERTICAL,
+            Direction::Left => Mask::HORIZON,
+            Direction::Right => Mask::HORIZON,
+            Direction::UpLeft => Mask::ALLSIDE,
+            Direction::UpRight => Mask::ALLSIDE,
+            Direction::DownLeft => Mask::ALLSIDE,
+            Direction::DownRight => Mask::ALLSIDE,
+        }
+    }
+
+    fn to_shift(&self) -> fn(&u64) -> u64 {
+        match self {
+            Direction::Up => |x| x << 8,
+            Direction::Down => |x| x >> 8,
+            Direction::Left => |x| x << 1,
+            Direction::Right => |x| x >> 1,
+            Direction::UpLeft => |x| x << 7,
+            Direction::UpRight => |x| x << 9,
+            Direction::DownLeft => |x| x >> 9,
+            Direction::DownRight => |x| x >> 7,
+        }
+    }
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -27,7 +66,9 @@ impl Bitboard {
         }
     }
 
-    fn lookup(own: &u64, opponent: &u64, mask: &u64, shift: fn(&u64) -> u64) -> u64 {
+    fn lookup(own: &u64, opponent: &u64, direction: &Direction) -> u64 {
+        let mask = direction.to_mask();
+        let shift = direction.to_shift();
         let mask = mask & opponent;
         let mut result = mask & shift(&own);
         result |= mask & shift(&result);
@@ -48,8 +89,9 @@ impl Bitboard {
             Turn::White => self.black_board,
         };
 
-        let _lookup = |mask: &u64, shift: fn(&u64) -> u64| -> u64 {
-            let result = Bitboard::lookup(&pos, &opponent, &mask, shift);
+        let _lookup = |direction: Direction| -> u64 {
+            let result = Bitboard::lookup(&pos, &opponent, &direction);
+            let shift = direction.to_shift();
             if own & shift(&result) != 0 {
                 result
             } else {
@@ -57,14 +99,14 @@ impl Bitboard {
             }
         };
 
-        let mut result = _lookup(&Mask::VERTICAL, |x| x << 1);
-        result |= _lookup(&Mask::VERTICAL, |x| x >> 1);
-        result |= _lookup(&Mask::HORIZON, |x| x << 8);
-        result |= _lookup(&Mask::HORIZON, |x| x >> 8);
-        result |= _lookup(&Mask::ALLSIDE, |x| x << 7);
-        result |= _lookup(&Mask::ALLSIDE, |x| x >> 7);
-        result |= _lookup(&Mask::ALLSIDE, |x| x << 9);
-        result |= _lookup(&Mask::ALLSIDE, |x| x >> 9);
+        let mut result = _lookup(Direction::Up);
+        result |= _lookup(Direction::Down);
+        result |= _lookup(Direction::Left);
+        result |= _lookup(Direction::Right);
+        result |= _lookup(Direction::UpLeft);
+        result |= _lookup(Direction::UpRight);
+        result |= _lookup(Direction::DownLeft);
+        result |= _lookup(Direction::DownRight);
         result
     }
 
@@ -82,6 +124,34 @@ impl Bitboard {
         }
     }
 
+    fn make_legal_board(&mut self) {
+        let blank = !(self.black_board | self.white_board);
+        let own = match self.turn {
+            Turn::Black => self.black_board,
+            Turn::White => self.white_board,
+        };
+        let opponent = match self.turn {
+            Turn::Black => self.white_board,
+            Turn::White => self.black_board,
+        };
+
+        let _lookup = |direction: Direction| -> u64 {
+            let result = Bitboard::lookup(&own, &opponent, &direction);
+            let shift = direction.to_shift();
+            blank & shift(&result)
+        };
+
+        let mut result = _lookup(Direction::Up);
+        result |= _lookup(Direction::Down);
+        result |= _lookup(Direction::Left);
+        result |= _lookup(Direction::Right);
+        result |= _lookup(Direction::UpLeft);
+        result |= _lookup(Direction::UpRight);
+        result |= _lookup(Direction::DownLeft);
+        result |= _lookup(Direction::DownRight);
+        self.legal_board = result;
+    }
+
     fn change_turn(&mut self) {
         match self.turn {
             Turn::Black => {
@@ -91,6 +161,7 @@ impl Bitboard {
                 self.turn = Turn::Black;
             }
         }
+        self.make_legal_board();
     }
 
     fn is_legal(&self, pos: Option<u64>) -> bool {
@@ -116,20 +187,21 @@ impl Bitboard {
 
     pub fn bitboard_to_vec(&self) -> Vec<Stone> {
         let mut vec = Vec::new();
-        let mut blackboard = self.black_board;
-        let mut whiteboard = self.white_board;
-        let mask: u64 = 1 << 63;
+        let blackboard = self.black_board;
+        let whiteboard = self.white_board;
+        let mut pos: u64 = 1 << 63;
 
         for _ in 0..64 {
-            vec.push(if blackboard & mask == mask {
+            vec.push(if blackboard & pos == pos {
                 Stone::Black
-            } else if whiteboard & mask == mask {
+            } else if whiteboard & pos == pos {
                 Stone::White
             } else {
-                Stone::Empty
+                let enum_flip = self.enumerate_flip(&pos);
+                let cnt = enum_flip.count_ones();
+                Stone::Empty(cnt)
             });
-            blackboard <<= 1;
-            whiteboard <<= 1;
+            pos >>= 1;
         }
 
         vec

@@ -20,14 +20,6 @@
     justify-content: center;
     user-select: none;
 
-    .white {
-      color: white;
-    }
-
-    .black {
-      color: black;
-    }
-
     .stone {
       width: 100%;
       height: 100%;
@@ -38,8 +30,17 @@
       cursor: default;
     }
 
-    .empty {
+    .white {
+      color: white;
+    }
+
+    .black {
+      color: black;
+    }
+
+    .legal {
       cursor: pointer;
+      color: yellow;
     }
   }
 }

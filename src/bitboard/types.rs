@@ -2,7 +2,7 @@
 pub enum Stone {
     Black,
     White,
-    Empty,
+    Empty(u32),
 }
 
 #[derive(PartialEq, Clone, Copy)]
