@@ -33,10 +33,9 @@ pub fn board(props: &BoardProps) -> Html {
                 alert(
                     format!(
                         "{}のターンがパスされました",
-                        if next_board.turn == Turn::Black {
-                            "白"
-                        } else {
-                            "黒"
+                        match next_board.turn {
+                            Turn::Black => "白",
+                            Turn::White => "黒",
                         }
                     )
                     .as_str(),
