@@ -1,4 +1,4 @@
-use crate::bitboard::types::{Stone, Turn, Direction};
+use crate::bitboard::types::{Direction, Stone, Turn};
 
 #[derive(PartialEq, Clone, Copy)]
 
@@ -155,7 +155,9 @@ impl Bitboard {
 
         self.make_legal_board();
 
-        if self.is_legal(None) { return; }
+        if self.is_legal(None) {
+            return;
+        }
 
         if self.pass {
             self.end = true;

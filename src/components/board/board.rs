@@ -1,5 +1,5 @@
-use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
 use gloo_dialogs::alert;
+use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
 
 use crate::bitboard::bitboard::Bitboard;
 use crate::bitboard::types::{Stone, Turn};
@@ -21,9 +21,26 @@ pub fn board(props: &BoardProps) -> Html {
         Callback::from(move |pos: i8| {
             let next_board = bitboard.move_stone(pos);
             if next_board.end {
-                alert(format!("黒: {} 白: {}", next_board.count_black(), next_board.count_white()).as_str());
+                alert(
+                    format!(
+                        "黒: {} 白: {}",
+                        next_board.count_black(),
+                        next_board.count_white()
+                    )
+                    .as_str(),
+                );
             } else if next_board.pass {
-                alert(format!("{}のターンがパスされました", if next_board.turn == Turn::Black {"白"} else {"黒"}).as_str());
+                alert(
+                    format!(
+                        "{}のターンがパスされました",
+                        if next_board.turn == Turn::Black {
+                            "白"
+                        } else {
+                            "黒"
+                        }
+                    )
+                    .as_str(),
+                );
             }
             board.set(next_board);
         })
