@@ -1,5 +1,34 @@
 use crate::bitboard::types::{Direction, Stone, Turn};
 
+const fn pre_compute() -> [i16; 2048] {
+    let weights: [i16; 64] = [
+        100, -40, 20, 5, 5, 20, -40, 100, -40, -80, -1, -1, -1, -1, -80, -40, 20, -1, 5, 1, 1, 5,
+        -1, -20, 5, -1, 1, 0, 0, 1, -1, 5, 5, -1, 1, 0, 0, 1, -1, 5, 20, -1, 5, 1, 1, 5, -1, -20,
+        -40, -80, -1, -1, -1, -1, -80, -40, 100, -40, 20, 5, 5, 20, -40, 100,
+    ];
+
+    let mut memo = [0i16; 2048];
+
+    let mut y: usize = 0;
+    while y < 8 {
+        let mut x: usize = 0;
+        while x < 256 {
+            let mut sum: i16 = 0;
+            let mut i: usize = 0;
+            while i < 8 {
+                let bit = (x >> i) & 1;
+                sum += weights[y * 8 + i] * bit as i16;
+                i += 1;
+            }
+            memo[y * 256 + x] = sum;
+            x += 1;
+        }
+        y += 1;
+    }
+
+    memo
+}
+
 #[derive(PartialEq, Clone, Copy)]
 
 pub struct Bitboard {
@@ -12,6 +41,8 @@ pub struct Bitboard {
 }
 
 impl Bitboard {
+    const WEIGHTS: [i16; 2048] = pre_compute();
+
     pub fn new() -> Bitboard {
         Bitboard {
             black_board: 34628173824,
@@ -72,6 +103,23 @@ impl Bitboard {
 
     pub fn count_white(&self) -> u32 {
         self.white_board.count_ones()
+    }
+
+    pub fn evaluation(&self) -> i16 {
+        let black_board = self.black_board;
+        let white_board = self.white_board;
+        let mask = 0b11111111;
+        let mut black_score: i16 = 0;
+        let mut white_score: i16 = 0;
+
+        for i in 0..8 {
+            let black = (black_board >> (i * 8)) & mask;
+            let white = (white_board >> (i * 8)) & mask;
+            black_score += Bitboard::WEIGHTS[i as usize * 256 + black as usize];
+            white_score += Bitboard::WEIGHTS[i as usize * 256 + white as usize];
+        }
+
+        black_score - white_score
     }
 
     fn lookup(own: &u64, opponent: &u64, direction: &Direction) -> u64 {

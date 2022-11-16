@@ -1,3 +1,4 @@
+use gloo_console::log;
 use gloo_dialogs::alert;
 use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
 
@@ -20,6 +21,7 @@ pub fn board(props: &BoardProps) -> Html {
         let board = board.clone();
         Callback::from(move |pos: i8| {
             let next_board = bitboard.move_stone(pos).unwrap_or(bitboard.clone());
+            log!("evaluation: {:?}", next_board.evaluation());
             if next_board.end {
                 alert(
                     format!(
