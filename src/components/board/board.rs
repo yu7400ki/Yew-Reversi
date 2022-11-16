@@ -19,7 +19,7 @@ pub fn board(props: &BoardProps) -> Html {
     let on_move_stone = {
         let board = board.clone();
         Callback::from(move |pos: i8| {
-            let next_board = bitboard.move_stone(pos);
+            let next_board = bitboard.move_stone(pos).unwrap_or(bitboard.clone());
             if next_board.end {
                 alert(
                     format!(

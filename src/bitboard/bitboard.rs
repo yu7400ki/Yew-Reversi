@@ -23,19 +23,22 @@ impl Bitboard {
         }
     }
 
-    pub fn move_stone(&self, pos: i8) -> Self {
+    pub fn move_stone(&self, pos: i8) -> Result<Self, &str> {
+        if pos < 0 || pos > 63 {
+            return Err("pos is out of range");
+        }
         let mut new_board = self.clone();
         let pos: u64 = 1 << (63 - pos);
 
         if !new_board.is_legal(Some(pos)) {
-            return new_board;
+            return Ok(new_board);
         }
 
         new_board.pass = false;
         new_board.flip(&pos);
         new_board.change_turn();
 
-        new_board
+        Ok(new_board)
     }
 
     pub fn bitboard_to_vec(&self) -> Vec<Stone> {
@@ -160,6 +163,7 @@ impl Bitboard {
         }
 
         if self.pass {
+            self.pass = false;
             self.end = true;
         } else {
             self.pass = true;
