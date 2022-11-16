@@ -3,7 +3,7 @@ use gloo_dialogs::alert;
 use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
 
 use crate::bitboard::bitboard::Bitboard;
-use crate::bitboard::types::{Stone, Turn};
+use crate::bitboard::types::Stone;
 use crate::components::board::cell::Cell;
 
 #[derive(Properties, PartialEq)]
@@ -20,8 +20,24 @@ pub fn board(props: &BoardProps) -> Html {
     let on_move_stone = {
         let board = board.clone();
         Callback::from(move |pos: i8| {
-            let next_board = bitboard.move_stone(pos).unwrap_or(bitboard.clone());
-            log!("evaluation: {:?}", next_board.evaluation());
+            let mut next_board = bitboard.move_stone(pos).unwrap_or(bitboard.clone());
+
+            log!("evaluation: ", next_board.evaluate());
+
+            if next_board.pass {
+                alert("CPUのターンがパスされます。");
+            } else if !next_board.end {
+                let cpu = next_board.search().unwrap();
+                next_board = next_board.move_stone(cpu).unwrap();
+                log!("CPU: ", cpu);
+                while next_board.pass {
+                    alert("あなたのターンがパスされます。");
+                    let cpu = next_board.search().unwrap();
+                    next_board = next_board.move_stone(cpu).unwrap();
+                }
+            }
+
+            board.set(next_board);
             if next_board.end {
                 alert(
                     format!(
@@ -31,19 +47,7 @@ pub fn board(props: &BoardProps) -> Html {
                     )
                     .as_str(),
                 );
-            } else if next_board.pass {
-                alert(
-                    format!(
-                        "{}のターンがパスされました",
-                        match next_board.turn {
-                            Turn::Black => "白",
-                            Turn::White => "黒",
-                        }
-                    )
-                    .as_str(),
-                );
             }
-            board.set(next_board);
         })
     };
 

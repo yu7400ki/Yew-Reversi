@@ -1,3 +1,4 @@
+use rand::Rng;
 use yew::prelude::*;
 
 use crate::bitboard::bitboard::Bitboard;
@@ -11,6 +12,23 @@ mod components;
 fn app() -> Html {
     let board = use_state(|| Bitboard::new());
     let bitboard = *board;
+
+    use_effect_with_deps(
+        {
+            let board = board.clone();
+            let bitboard = *board;
+            move |_| {
+                let rand = rand::thread_rng().gen::<f64>();
+                if rand > 0.5 {
+                    let cpu = bitboard.search().unwrap();
+                    let next_board = bitboard.move_stone(cpu).unwrap();
+                    board.set(next_board);
+                }
+                || ()
+            }
+        },
+        (),
+    );
 
     html! {
         <div id="root">

@@ -105,7 +105,7 @@ impl Bitboard {
         self.white_board.count_ones()
     }
 
-    pub fn evaluation(&self) -> i16 {
+    pub fn evaluate(&self) -> i16 {
         let black_board = self.black_board;
         let white_board = self.white_board;
         let mask = 0b11111111;
@@ -119,7 +119,43 @@ impl Bitboard {
             white_score += Bitboard::WEIGHTS[i as usize * 256 + white as usize];
         }
 
-        black_score - white_score
+        match self.turn {
+            Turn::Black => black_score - white_score,
+            Turn::White => white_score - black_score,
+        }
+    }
+
+    fn predict(&self, pos: u64) -> i16 {
+        let mut new_board = self.clone();
+
+        if !new_board.is_legal(Some(pos)) {
+            return i16::MIN;
+        }
+
+        new_board.flip(&pos);
+        new_board.evaluate()
+    }
+
+    pub fn search(&self) -> Option<i8> {
+        let mut pos = 1 << 63;
+
+        let mut max = i16::MIN;
+        let mut res: Option<u64> = None;
+        for _ in 0..64 {
+            if self.is_legal(Some(pos)) {
+                let score = self.predict(pos);
+                if score >= max {
+                    max = score;
+                    res = Some(pos);
+                }
+            }
+            pos >>= 1;
+        }
+
+        match res {
+            Some(pos) => Some(pos.leading_zeros() as i8),
+            None => None,
+        }
     }
 
     fn lookup(own: &u64, opponent: &u64, direction: &Direction) -> u64 {
