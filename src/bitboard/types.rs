@@ -20,6 +20,19 @@ impl Mask {
     pub const ALLSIDE: u64 = 0x007e7e7e7e7e7e00;
 }
 
+struct Shift;
+
+impl Shift {
+    pub const UP: fn(&u64) -> u64 = |x| x << 8;
+    pub const DOWN: fn(&u64) -> u64 = |x| x >> 8;
+    pub const LEFT: fn(&u64) -> u64 = |x| x << 1;
+    pub const RIGHT: fn(&u64) -> u64 = |x| x >> 1;
+    pub const UP_LEFT: fn(&u64) -> u64 = |x| x << 7;
+    pub const UP_RIGHT: fn(&u64) -> u64 = |x| x << 9;
+    pub const DOWN_LEFT: fn(&u64) -> u64 = |x| x >> 9;
+    pub const DOWN_RIGHT: fn(&u64) -> u64 = |x| x >> 7;
+}
+
 pub enum Direction {
     Up,
     Down,
@@ -47,14 +60,14 @@ impl Direction {
 
     pub fn to_shift(&self) -> fn(&u64) -> u64 {
         match self {
-            Direction::Up => |x| x << 8,
-            Direction::Down => |x| x >> 8,
-            Direction::Left => |x| x << 1,
-            Direction::Right => |x| x >> 1,
-            Direction::UpLeft => |x| x << 7,
-            Direction::UpRight => |x| x << 9,
-            Direction::DownLeft => |x| x >> 9,
-            Direction::DownRight => |x| x >> 7,
+            Direction::Up => Shift::UP,
+            Direction::Down => Shift::DOWN,
+            Direction::Left => Shift::LEFT,
+            Direction::Right => Shift::RIGHT,
+            Direction::UpLeft => Shift::UP_LEFT,
+            Direction::UpRight => Shift::UP_RIGHT,
+            Direction::DownLeft => Shift::DOWN_LEFT,
+            Direction::DownRight => Shift::DOWN_RIGHT,
         }
     }
 }
