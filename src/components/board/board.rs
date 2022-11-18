@@ -2,7 +2,7 @@ use gloo_dialogs::alert;
 use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
 
 use crate::bitboard::bitboard::Bitboard;
-use crate::bitboard::types::{Stone, Turn};
+use crate::bitboard::types::{Coordinate, Stone, Turn};
 use crate::components::board::cell::Cell;
 
 #[derive(Properties, PartialEq)]
@@ -18,8 +18,8 @@ pub fn board(props: &BoardProps) -> Html {
 
     let on_move_stone = {
         let board = board.clone();
-        Callback::from(move |pos: i8| {
-            let next_board = bitboard.move_stone(pos).unwrap_or(bitboard.clone());
+        Callback::from(move |coordinate: Coordinate| {
+            let next_board = bitboard.move_stone(coordinate).unwrap_or(bitboard.clone());
             if next_board.end {
                 alert(
                     format!(
@@ -45,10 +45,10 @@ pub fn board(props: &BoardProps) -> Html {
         })
     };
 
-    let generate_cell = |pos: i8, stone: Stone| {
+    let generate_cell = |coordinate: Coordinate, stone: Stone| {
         let on_move_stone = on_move_stone.clone();
         html! {
-            <Cell pos={pos} stone={stone} on_move_stone={on_move_stone}/>
+            <Cell {coordinate} {stone} {on_move_stone}/>
         }
     };
 
@@ -59,9 +59,9 @@ pub fn board(props: &BoardProps) -> Html {
                 .iter()
                 .enumerate()
                 .map(|item| {
-                        let pos = item.0 as i8;
+                        let coordinate = Coordinate::from_position(item.0 as u8);
                         let stone = *item.1;
-                        generate_cell(pos, stone)
+                        generate_cell(coordinate, stone)
                     }
                 ).collect::<Html>()
             }
