@@ -58,3 +58,46 @@ impl Direction {
         }
     }
 }
+
+#[derive(PartialEq, Clone, Copy)]
+pub struct Coordinate {
+    position: u8,
+}
+
+impl Coordinate {
+    const MIN: u8 = 0;
+    const MAX: u8 = 63;
+
+    fn new(position: u8) -> Coordinate {
+        if position < Coordinate::MIN || position > Coordinate::MAX {
+            panic!("Invalid position: {}", position);
+        }
+        Coordinate { position }
+    }
+
+    pub fn from_position(position: u8) -> Coordinate {
+        Coordinate::new(position)
+    }
+
+    pub fn to_position(&self) -> u8 {
+        self.position
+    }
+
+    pub fn from_bit(bit: u64) -> Coordinate {
+        let position = bit.leading_zeros() as u8;
+        Coordinate::new(position)
+    }
+
+    pub fn to_bit(&self) -> u64 {
+        1 << (63 - self.position)
+    }
+
+    pub fn next(&self) -> Coordinate {
+        let position = self.position + 1;
+        if position > Coordinate::MAX {
+            Coordinate::new(Coordinate::MIN)
+        } else {
+            Coordinate::new(position)
+        }
+    }
+}
