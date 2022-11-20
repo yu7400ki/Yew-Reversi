@@ -21,7 +21,7 @@ fn app() -> Html {
                 let rand = rand::thread_rng().gen::<f64>();
                 if rand > 0.5 {
                     let cpu = bitboard.search().unwrap();
-                    let next_board = bitboard.move_stone(cpu).unwrap();
+                    let next_board = bitboard.move_stone(&cpu);
                     board.set(next_board);
                 }
                 || ()

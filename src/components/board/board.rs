@@ -20,7 +20,7 @@ pub fn board(props: &BoardProps) -> Html {
     let on_move_stone = {
         let board = board.clone();
         Callback::from(move |pos: Coordinate| {
-            let mut next_board = bitboard.move_stone(pos).unwrap_or(bitboard.clone());
+            let mut next_board = bitboard.move_stone(&pos);
 
             log!("evaluation: ", next_board.evaluate());
 
@@ -28,12 +28,12 @@ pub fn board(props: &BoardProps) -> Html {
                 alert("CPUのターンがパスされます。");
             } else if !next_board.end {
                 let cpu = next_board.search().unwrap();
-                next_board = next_board.move_stone(cpu).unwrap();
+                next_board = next_board.move_stone(&cpu);
                 log!("CPU: ", cpu.to_position());
                 while next_board.pass {
                     alert("あなたのターンがパスされます。");
                     let cpu = next_board.search().unwrap();
-                    next_board = next_board.move_stone(cpu).unwrap();
+                    next_board = next_board.move_stone(&cpu);
                 }
             }
 

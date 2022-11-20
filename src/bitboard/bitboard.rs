@@ -54,19 +54,18 @@ impl Bitboard {
         }
     }
 
-    pub fn move_stone(&self, coordinate: Coordinate) -> Result<Self, &str> {
+    pub fn move_stone(&self, coordinate: &Coordinate) -> Self {
         let mut new_board = self.clone();
-        let coordinate = coordinate;
 
         if !new_board.is_legal(Some(coordinate)) {
-            return Ok(new_board);
+            return new_board;
         }
 
         new_board.pass = false;
         new_board.flip(&coordinate);
         new_board.change_turn();
 
-        Ok(new_board)
+        new_board
     }
 
     pub fn bitboard_to_vec(&self) -> Vec<Stone> {
@@ -74,17 +73,7 @@ impl Bitboard {
         let mut coordinate = Coordinate::from_position(0);
 
         for _ in 0..64 {
-            vec.push(if self.is_black(&coordinate) {
-                Stone::Black
-            } else if self.is_white(&coordinate) {
-                Stone::White
-            } else if self.is_legal(Some(coordinate)) {
-                let enum_flip = self.enumerate_flip(&coordinate);
-                let cnt = enum_flip.count_ones();
-                Stone::Legal(cnt)
-            } else {
-                Stone::Empty
-            });
+            vec.push(self.get_stone(&coordinate));
             coordinate = coordinate.next();
         }
 
@@ -119,25 +108,14 @@ impl Bitboard {
         }
     }
 
-    fn predict(&self, pos: Coordinate) -> i16 {
-        let mut new_board = self.clone();
-
-        if !new_board.is_legal(Some(pos)) {
-            return i16::MIN;
-        }
-
-        new_board.flip(&pos);
-        new_board.evaluate()
-    }
-
     pub fn search(&self) -> Option<Coordinate> {
         let mut pos = Coordinate::from_position(0);
 
         let mut max = i16::MIN;
         let mut res: Option<Coordinate> = None;
         for _ in 0..64 {
-            if self.is_legal(Some(pos)) {
-                let score = self.predict(pos);
+            if self.is_legal(Some(&pos)) {
+                let score = self.predict(&pos);
                 if score >= max {
                     max = score;
                     res = Some(pos);
@@ -149,22 +127,49 @@ impl Bitboard {
         res
     }
 
+    fn predict(&self, pos: &Coordinate) -> i16 {
+        let mut new_board = self.clone();
 
-    fn is_legal(&self, coordinate: Option<Coordinate>) -> bool {
+        if !new_board.is_legal(Some(pos)) {
+            return i16::MIN;
+        }
+
+        new_board.flip(&pos);
+        new_board.evaluate()
+    }
+
+    fn get_stone(&self, coordinate: &Coordinate) -> Stone {
+        if self.is_black(coordinate) {
+            Stone::Black
+        } else if self.is_white(coordinate) {
+            Stone::White
+        } else if self.is_legal(Some(coordinate)) {
+            let enum_flip = self.enumerate_flip(coordinate);
+            let cnt = enum_flip.count_ones();
+            Stone::Legal(cnt)
+        } else {
+            Stone::Empty
+        }
+    }
+
+    fn is_legal(&self, coordinate: Option<&Coordinate>) -> bool {
         match coordinate {
-            Some(coordinate) => self.legal_board & coordinate.to_bit() != 0,
+            Some(coordinate) => match self.get_stone(&coordinate) {
+                Stone::Legal(_) => true,
+                _ => false,
+            },
             None => self.legal_board != 0,
         }
     }
 
     fn is_black(&self, coordinate: &Coordinate) -> bool {
-        let bit = coordinate.to_bit();
-        self.black_board & bit == bit
+        let stone = self.get_stone(coordinate);
+        stone == Stone::Black
     }
 
     fn is_white(&self, coordinate: &Coordinate) -> bool {
-        let bit = coordinate.to_bit();
-        self.white_board & bit == bit
+        let stone = self.get_stone(coordinate);
+        stone == Stone::White
     }
 
     fn set_legal_board(&mut self) {
