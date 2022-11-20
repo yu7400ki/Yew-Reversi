@@ -1,6 +1,6 @@
 use crate::bitboard::types::{Coordinate, Direction, Stone, Turn};
 
-const fn pre_compute() -> [i16; 2048] {
+const fn pre_compute_weight() -> [i16; 2048] {
     let weights: [i16; 64] = [
         100, -40, 20, 5, 5, 20, -40, 100, -40, -80, -1, -1, -1, -1, -80, -40, 20, -1, 5, 1, 1, 5,
         -1, -20, 5, -1, 1, 0, 0, 1, -1, 5, 5, -1, 1, 0, 0, 1, -1, 5, 20, -1, 5, 1, 1, 5, -1, -20,
@@ -41,7 +41,7 @@ pub struct Bitboard {
 }
 
 impl Bitboard {
-    const WEIGHTS: [i16; 2048] = pre_compute();
+    const WEIGHTS: [i16; 2048] = pre_compute_weight();
 
     pub fn new() -> Bitboard {
         Bitboard {
@@ -109,32 +109,32 @@ impl Bitboard {
     }
 
     pub fn search(&self) -> Option<Coordinate> {
-        let mut pos = Coordinate::from_position(0);
+        let mut coordinate = Coordinate::from_position(0);
 
         let mut max = i16::MIN;
         let mut res: Option<Coordinate> = None;
         for _ in 0..64 {
-            if self.is_legal(Some(&pos)) {
-                let score = self.predict(&pos);
+            if self.is_legal(Some(&coordinate)) {
+                let score = self.predict(&coordinate);
                 if score >= max {
                     max = score;
-                    res = Some(pos);
+                    res = Some(coordinate);
                 }
             }
-            pos = pos.next();
+            coordinate = coordinate.next();
         }
 
         res
     }
 
-    fn predict(&self, pos: &Coordinate) -> i16 {
+    fn predict(&self, coordinate: &Coordinate) -> i16 {
         let mut new_board = self.clone();
 
-        if !new_board.is_legal(Some(pos)) {
+        if !new_board.is_legal(Some(coordinate)) {
             return i16::MIN;
         }
 
-        new_board.flip(&pos);
+        new_board.flip(coordinate);
         new_board.evaluate()
     }
 
@@ -154,22 +154,19 @@ impl Bitboard {
 
     fn is_legal(&self, coordinate: Option<&Coordinate>) -> bool {
         match coordinate {
-            Some(coordinate) => match self.get_stone(&coordinate) {
-                Stone::Legal(_) => true,
-                _ => false,
-            },
+            Some(coordinate) => self.legal_board & coordinate.to_bit() != 0,
             None => self.legal_board != 0,
         }
     }
 
     fn is_black(&self, coordinate: &Coordinate) -> bool {
-        let stone = self.get_stone(coordinate);
-        stone == Stone::Black
+        let bit = coordinate.to_bit();
+        self.black_board & bit == bit
     }
 
     fn is_white(&self, coordinate: &Coordinate) -> bool {
-        let stone = self.get_stone(coordinate);
-        stone == Stone::White
+        let bit = coordinate.to_bit();
+        self.white_board & bit == bit
     }
 
     fn set_legal_board(&mut self) {
