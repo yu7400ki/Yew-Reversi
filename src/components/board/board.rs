@@ -3,7 +3,7 @@ use gloo_dialogs::alert;
 use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
 
 use crate::bitboard::bitboard::Bitboard;
-use crate::bitboard::types::Stone;
+use crate::bitboard::types::{Coordinate, Stone};
 use crate::components::board::cell::Cell;
 
 #[derive(Properties, PartialEq)]
@@ -19,7 +19,7 @@ pub fn board(props: &BoardProps) -> Html {
 
     let on_move_stone = {
         let board = board.clone();
-        Callback::from(move |pos: i8| {
+        Callback::from(move |pos: Coordinate| {
             let mut next_board = bitboard.move_stone(pos).unwrap_or(bitboard.clone());
 
             log!("evaluation: ", next_board.evaluate());
@@ -29,7 +29,7 @@ pub fn board(props: &BoardProps) -> Html {
             } else if !next_board.end {
                 let cpu = next_board.search().unwrap();
                 next_board = next_board.move_stone(cpu).unwrap();
-                log!("CPU: ", cpu);
+                log!("CPU: ", cpu.to_position());
                 while next_board.pass {
                     alert("あなたのターンがパスされます。");
                     let cpu = next_board.search().unwrap();
@@ -51,10 +51,10 @@ pub fn board(props: &BoardProps) -> Html {
         })
     };
 
-    let generate_cell = |pos: i8, stone: Stone| {
+    let generate_cell = |coordinate: Coordinate, stone: Stone| {
         let on_move_stone = on_move_stone.clone();
         html! {
-            <Cell pos={pos} stone={stone} on_move_stone={on_move_stone}/>
+            <Cell {coordinate} {stone} {on_move_stone}/>
         }
     };
 
@@ -65,9 +65,9 @@ pub fn board(props: &BoardProps) -> Html {
                 .iter()
                 .enumerate()
                 .map(|item| {
-                        let pos = item.0 as i8;
+                        let coordinate = Coordinate::from_position(item.0 as u8);
                         let stone = *item.1;
-                        generate_cell(pos, stone)
+                        generate_cell(coordinate, stone)
                     }
                 ).collect::<Html>()
             }

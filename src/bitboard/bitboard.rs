@@ -1,4 +1,4 @@
-use crate::bitboard::types::{Direction, Stone, Turn};
+use crate::bitboard::types::{Coordinate, Direction, Stone, Turn};
 
 const fn pre_compute() -> [i16; 2048] {
     let weights: [i16; 64] = [
@@ -54,19 +54,16 @@ impl Bitboard {
         }
     }
 
-    pub fn move_stone(&self, pos: i8) -> Result<Self, &str> {
-        if pos < 0 || pos > 63 {
-            return Err("pos is out of range");
-        }
+    pub fn move_stone(&self, coordinate: Coordinate) -> Result<Self, &str> {
         let mut new_board = self.clone();
-        let pos: u64 = 1 << (63 - pos);
+        let coordinate = coordinate;
 
-        if !new_board.is_legal(Some(pos)) {
+        if !new_board.is_legal(Some(coordinate)) {
             return Ok(new_board);
         }
 
         new_board.pass = false;
-        new_board.flip(&pos);
+        new_board.flip(&coordinate);
         new_board.change_turn();
 
         Ok(new_board)
@@ -74,24 +71,21 @@ impl Bitboard {
 
     pub fn bitboard_to_vec(&self) -> Vec<Stone> {
         let mut vec = Vec::new();
-        let black_board = self.black_board;
-        let white_board = self.white_board;
-        let legal_board = self.legal_board;
-        let mut pos: u64 = 1 << 63;
+        let mut coordinate = Coordinate::from_position(0);
 
         for _ in 0..64 {
-            vec.push(if black_board & pos == pos {
+            vec.push(if self.is_black(&coordinate) {
                 Stone::Black
-            } else if white_board & pos == pos {
+            } else if self.is_white(&coordinate) {
                 Stone::White
-            } else if legal_board & pos == pos {
-                let enum_flip = self.enumerate_flip(&pos);
+            } else if self.is_legal(Some(coordinate)) {
+                let enum_flip = self.enumerate_flip(&coordinate);
                 let cnt = enum_flip.count_ones();
                 Stone::Legal(cnt)
             } else {
                 Stone::Empty
             });
-            pos >>= 1;
+            coordinate = coordinate.next();
         }
 
         vec
@@ -125,7 +119,7 @@ impl Bitboard {
         }
     }
 
-    fn predict(&self, pos: u64) -> i16 {
+    fn predict(&self, pos: Coordinate) -> i16 {
         let mut new_board = self.clone();
 
         if !new_board.is_legal(Some(pos)) {
@@ -136,11 +130,11 @@ impl Bitboard {
         new_board.evaluate()
     }
 
-    pub fn search(&self) -> Option<i8> {
-        let mut pos = 1 << 63;
+    pub fn search(&self) -> Option<Coordinate> {
+        let mut pos = Coordinate::from_position(0);
 
         let mut max = i16::MIN;
-        let mut res: Option<u64> = None;
+        let mut res: Option<Coordinate> = None;
         for _ in 0..64 {
             if self.is_legal(Some(pos)) {
                 let score = self.predict(pos);
@@ -149,35 +143,64 @@ impl Bitboard {
                     res = Some(pos);
                 }
             }
-            pos >>= 1;
+            pos = pos.next();
         }
 
-        match res {
-            Some(pos) => Some(pos.leading_zeros() as i8),
-            None => None,
+        res
+    }
+
+
+    fn is_legal(&self, coordinate: Option<Coordinate>) -> bool {
+        match coordinate {
+            Some(coordinate) => self.legal_board & coordinate.to_bit() != 0,
+            None => self.legal_board != 0,
         }
     }
 
-    fn lookup(own: &u64, opponent: &u64, direction: &Direction) -> u64 {
-        let shift = direction.to_shift();
-        let mask = opponent & direction.to_mask();
-        let mut result = mask & shift(&own);
-        result |= mask & shift(&result);
-        result |= mask & shift(&result);
-        result |= mask & shift(&result);
-        result |= mask & shift(&result);
-        result |= mask & shift(&result);
-        result
+    fn is_black(&self, coordinate: &Coordinate) -> bool {
+        let bit = coordinate.to_bit();
+        self.black_board & bit == bit
     }
 
-    fn enumerate_flip(&self, pos: &u64) -> u64 {
+    fn is_white(&self, coordinate: &Coordinate) -> bool {
+        let bit = coordinate.to_bit();
+        self.white_board & bit == bit
+    }
+
+    fn set_legal_board(&mut self) {
+        self.legal_board =
+            Bitboard::make_legal_board(&self.black_board, &self.white_board, &self.turn);
+    }
+
+    fn change_turn(&mut self) {
+        match self.turn {
+            Turn::Black => self.turn = Turn::White,
+            Turn::White => self.turn = Turn::Black,
+        }
+
+        self.set_legal_board();
+
+        if self.is_legal(None) {
+            return;
+        }
+
+        if self.pass {
+            self.pass = false;
+            self.end = true;
+        } else {
+            self.pass = true;
+            self.change_turn();
+        }
+    }
+
+    fn enumerate_flip(&self, coordinate: &Coordinate) -> u64 {
         let (own, opponent) = match self.turn {
             Turn::Black => (self.black_board, self.white_board),
             Turn::White => (self.white_board, self.black_board),
         };
 
         let _lookup = |direction: Direction| -> u64 {
-            let result = Bitboard::lookup(&pos, &opponent, &direction);
+            let result = Bitboard::lookup(&coordinate.to_bit(), &opponent, &direction);
             let shift = direction.to_shift();
             match own & shift(&result) {
                 0 => 0,
@@ -196,25 +219,26 @@ impl Bitboard {
         result
     }
 
-    fn flip(&mut self, pos: &u64) {
-        let flip = self.enumerate_flip(&pos);
+    fn flip(&mut self, coordinate: &Coordinate) {
+        let flip = self.enumerate_flip(&coordinate);
+        let bit = coordinate.to_bit();
         match self.turn {
             Turn::Black => {
-                self.black_board |= pos | flip;
+                self.black_board |= bit | flip;
                 self.white_board ^= flip;
             }
             Turn::White => {
-                self.white_board |= pos | flip;
+                self.white_board |= bit | flip;
                 self.black_board ^= flip;
             }
         }
     }
 
-    fn make_legal_board(&mut self) {
-        let blank = !(self.black_board | self.white_board);
-        let (own, opponent) = match self.turn {
-            Turn::Black => (self.black_board, self.white_board),
-            Turn::White => (self.white_board, self.black_board),
+    fn make_legal_board(black: &u64, white: &u64, turn: &Turn) -> u64 {
+        let blank = !(black | white);
+        let (own, opponent) = match turn {
+            Turn::Black => (black, white),
+            Turn::White => (white, black),
         };
 
         let _lookup = |direction: Direction| -> u64 {
@@ -231,34 +255,18 @@ impl Bitboard {
         result |= _lookup(Direction::UpRight);
         result |= _lookup(Direction::DownLeft);
         result |= _lookup(Direction::DownRight);
-        self.legal_board = result;
+        result
     }
 
-    fn change_turn(&mut self) {
-        match self.turn {
-            Turn::Black => self.turn = Turn::White,
-            Turn::White => self.turn = Turn::Black,
-        }
-
-        self.make_legal_board();
-
-        if self.is_legal(None) {
-            return;
-        }
-
-        if self.pass {
-            self.pass = false;
-            self.end = true;
-        } else {
-            self.pass = true;
-            self.change_turn();
-        }
-    }
-
-    fn is_legal(&self, pos: Option<u64>) -> bool {
-        match pos {
-            Some(pos) => self.legal_board & pos != 0,
-            None => self.legal_board != 0,
-        }
+    fn lookup(own: &u64, opponent: &u64, direction: &Direction) -> u64 {
+        let shift = direction.to_shift();
+        let mask = opponent & direction.to_mask();
+        let mut result = mask & shift(&own);
+        result |= mask & shift(&result);
+        result |= mask & shift(&result);
+        result |= mask & shift(&result);
+        result |= mask & shift(&result);
+        result |= mask & shift(&result);
+        result
     }
 }
