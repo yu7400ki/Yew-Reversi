@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use crate::bitboard::types::{Coordinate, Direction, Stone, Turn};
 
 const fn pre_compute_weight() -> [i16; 2048] {
@@ -38,6 +40,7 @@ pub struct Bitboard {
     pub turn: Turn,
     pub pass: bool,
     pub end: bool,
+    pub winner: Option<Turn>,
 }
 
 impl Bitboard {
@@ -51,6 +54,7 @@ impl Bitboard {
             turn: Turn::Black,
             pass: false,
             end: false,
+            winner: None,
         }
     }
 
@@ -189,6 +193,13 @@ impl Bitboard {
         if self.pass {
             self.pass = false;
             self.end = true;
+            let black_cnt = self.count_black();
+            let white_cnt = self.count_white();
+            match black_cnt.cmp(&white_cnt) {
+                Ordering::Less => self.winner = Some(Turn::White),
+                Ordering::Equal => self.winner = None,
+                Ordering::Greater => self.winner = Some(Turn::Black),
+            }
         } else {
             self.pass = true;
             self.change_turn();
