@@ -1,4 +1,4 @@
-use yew::{function_component, html, Callback, MouseEvent, Properties};
+use yew::{function_component, html, Callback, Html, MouseEvent, Properties};
 
 use crate::bitboard::types::{Coordinate, Stone};
 
