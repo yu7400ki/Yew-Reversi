@@ -9,6 +9,7 @@ use crate::route::Route;
 
 mod bitboard;
 mod components;
+mod reversi;
 mod route;
 
 #[derive(Properties, PartialEq)]
