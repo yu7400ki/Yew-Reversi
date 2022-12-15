@@ -58,10 +58,8 @@ impl BoardBehavior for BitBoard {
     }
 
     fn to_vec(&self, turn: &Turn) -> Vec<SquareState> {
-        let coordinate = Coordinate::from(0);
-
-        coordinate
-            .map(|c| self.get_square_state(&c, turn))
+        (0..64)
+            .map(|i| self.get_square_state(&Coordinate::from(i), turn))
             .collect()
     }
 

@@ -16,7 +16,7 @@ where
 #[function_component(Board)]
 pub fn board<T>(props: &BoardProps<T>) -> Html
 where
-    T: BoardBehavior + Clone + PartialEq + Copy,
+    T: BoardBehavior + Clone + PartialEq + Copy + 'static,
 {
     let board_state = &props.board_state;
     let game = *props.board_state;

@@ -49,7 +49,7 @@ where
                 let new_board = self.board.move_disc(&c, &self.turn);
                 (c, new_board.evaluate(&self.turn))
             })
-            .max_by_key(|(_, score)| score)
+            .max_by_key(|(_, score)| *score)
             .map(|(c, _)| c)
     }
 
