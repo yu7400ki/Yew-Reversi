@@ -1,22 +1,27 @@
 use yew::{function_component, html, Html, Properties};
 
-use crate::bitboard::bitboard::Bitboard;
-use crate::bitboard::types::Turn;
+use crate::reversi::{BoardBehavior, Game, Turn};
 
 #[derive(Properties, PartialEq)]
-pub struct StatusProps {
-    pub bitboard: Bitboard,
+pub struct StatusProps<T>
+where
+    T: BoardBehavior + Clone + PartialEq + Copy,
+{
+    pub game: Game<T>,
 }
 
 #[function_component(Status)]
-pub fn cell(props: &StatusProps) -> Html {
-    let bitboard = &props.bitboard;
+pub fn cell<T>(props: &StatusProps<T>) -> Html
+where
+    T: BoardBehavior + Clone + PartialEq + Copy,
+{
+    let game = &props.game;
 
     html! {
         <div id="status">
-            <p>{format!("●:{}", bitboard.count_black())}</p>
-            <p>{format!("ターン:{}", if bitboard.turn == Turn::Black {"●"} else {"○"})}</p>
-            <p>{format!("○:{}", bitboard.count_white())}</p>
+            <p>{format!("●:{}", game.board.count_black())}</p>
+            <p>{format!("ターン:{}", if game.turn == Turn::Black {"●"} else {"○"})}</p>
+            <p>{format!("○:{}", game.board.count_white())}</p>
         </div>
     }
 }

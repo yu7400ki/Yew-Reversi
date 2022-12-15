@@ -1,2 +1,5 @@
 pub mod board;
-pub mod cell;
+pub mod square;
+
+pub use board::Board;
+pub use square::Square;

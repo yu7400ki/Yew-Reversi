@@ -1,28 +1,29 @@
 use rand::Rng;
 use yew::prelude::*;
 
-use crate::bitboard::bitboard::Bitboard;
-use crate::components::board::board::Board;
-use crate::components::status::status::Status;
+use crate::components::board::Board;
+use crate::components::status::Status;
+use crate::reversi::{BitBoard, BoardBehavior, Game};
 
 mod bitboard;
 mod components;
+mod reversi;
 
 #[function_component(App)]
 fn app() -> Html {
-    let board = use_state(|| Bitboard::new());
-    let bitboard = *board;
+    let board_state = use_state(|| Game::from(BitBoard::new()));
+    let game = *board_state;
 
     use_effect_with_deps(
         {
-            let board = board.clone();
-            let bitboard = *board;
+            let board_state = board_state.clone();
+            let game = *board_state;
             move |_| {
                 let rand = rand::thread_rng().gen::<f64>();
                 if rand > 0.5 {
-                    let cpu = bitboard.search().unwrap();
-                    let next_board = bitboard.move_stone(&cpu);
-                    board.set(next_board);
+                    let cpu = game.search().unwrap();
+                    let next_board = game.move_disc(&cpu);
+                    board_state.set(next_board);
                 }
                 || ()
             }
@@ -32,8 +33,8 @@ fn app() -> Html {
 
     html! {
         <div id="root">
-            <Status bitboard={bitboard} />
-            <Board board={board}/>
+            <Status {game} />
+            <Board {board_state}/>
         </div>
     }
 }

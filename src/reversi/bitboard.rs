@@ -1,12 +1,12 @@
 use std::cmp::Ordering;
 
-use crate::reversi::{Board, Coordinate, SquareState, Turn};
+use crate::reversi::{BoardBehavior, Coordinate, SquareState, Turn};
 
 /* ---------------------------------
     BitBoard
 --------------------------------- */
 
-#[derive(Clone)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct BitBoard {
     black_board: u64,
     white_board: u64,
@@ -14,7 +14,7 @@ pub struct BitBoard {
     legal_white: u64,
 }
 
-impl Board for BitBoard {
+impl BoardBehavior for BitBoard {
     fn new() -> Self {
         BitBoard {
             black_board: 0x0000000810000000,
@@ -57,22 +57,40 @@ impl Board for BitBoard {
         }
     }
 
-    fn to_vec(&self) -> Vec<SquareState> {
+    fn to_vec(&self, turn: &Turn) -> Vec<SquareState> {
         let coordinate = Coordinate::from(0);
 
-        coordinate.map(|c| self.get_square_state(&c)).collect()
+        coordinate
+            .map(|c| self.get_square_state(&c, turn))
+            .collect()
+    }
+
+    fn evaluate(&self, turn: &Turn) -> i32 {
+        let black_count = self.black_board.count_ones() as i32;
+        let white_count = self.white_board.count_ones() as i32;
+
+        match turn {
+            Turn::Black => black_count - white_count,
+            Turn::White => white_count - black_count,
+        }
+    }
+
+    fn count_black(&self) -> u32 {
+        self.black_board.count_ones()
+    }
+
+    fn count_white(&self) -> u32 {
+        self.white_board.count_ones()
     }
 }
 
 impl BitBoard {
-    fn get_square_state(&self, coordinate: &Coordinate) -> SquareState {
+    fn get_square_state(&self, coordinate: &Coordinate, turn: &Turn) -> SquareState {
         if self.is_black(coordinate) {
             SquareState::Black
         } else if self.is_white(coordinate) {
             SquareState::White
-        } else if self.is_legal(coordinate, &Turn::Black) {
-            SquareState::Legal(0)
-        } else if self.is_legal(coordinate, &Turn::White) {
+        } else if self.is_legal(coordinate, turn) {
             SquareState::Legal(0)
         } else {
             SquareState::Empty
