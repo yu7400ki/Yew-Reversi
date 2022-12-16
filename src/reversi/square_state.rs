@@ -1,7 +1,8 @@
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum SquareState {
     Black,
     White,
-    Legal(u32),
+    BlackLegal(u32),
+    WhiteLegal(u32),
     Empty,
 }

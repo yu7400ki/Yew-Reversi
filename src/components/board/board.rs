@@ -3,7 +3,7 @@ use gloo_dialogs::alert;
 use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
 
 use crate::components::board::Square;
-use crate::reversi::{BoardBehavior, Coordinate, Game, SquareState};
+use crate::reversi::{BoardBehavior, Coordinate, Game, SquareState, Turn};
 
 #[derive(Properties, PartialEq)]
 pub struct BoardProps<T>
@@ -20,7 +20,23 @@ where
 {
     let board_state = &props.board_state;
     let game = *props.board_state;
-    let discs = game.to_vec();
+    let discs = game.board.to_vec().into_iter().map(|s| {
+        match s {
+            SquareState::BlackLegal(_) => {
+                match game.turn {
+                    Turn::Black => s,
+                    Turn::White => SquareState::Empty,
+                }
+            }
+            SquareState::WhiteLegal(_) => {
+                match game.turn {
+                    Turn::Black => SquareState::Empty,
+                    Turn::White => s,
+                }
+            }
+            _ => s,
+        }
+    }).collect::<Vec<_>>();
 
     let on_move_disc = {
         let board_state = board_state.clone();
@@ -69,8 +85,8 @@ where
                 .enumerate()
                 .map(|item| {
                         let coordinate = Coordinate::from(item.0 as u8);
-                        let stone = *item.1;
-                        generate_cell(coordinate, stone)
+                        let disc = *item.1;
+                        generate_cell(coordinate, disc)
                     }
                 ).collect::<Html>()
             }

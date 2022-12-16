@@ -12,7 +12,7 @@ pub struct SquareProps {
 #[function_component(Square)]
 pub fn cell(props: &SquareProps) -> Html {
     let coordinate = &props.coordinate;
-    let stone = &props.square_state;
+    let disc = &props.square_state;
     let on_move_stone = &props.on_move_disc;
 
     let onclick = {
@@ -26,10 +26,11 @@ pub fn cell(props: &SquareProps) -> Html {
     html! {
         <div class={format!("cell {}", coordinate.to_int())}>
             {
-                match stone {
+                match disc {
                     SquareState::Black => html! {<p class="stone black">{"●"}</p>},
                     SquareState::White => html! {<p class="stone white">{"●"}</p>},
-                    SquareState::Legal(cnt) => html! {<p class="stone legal" {onclick}>{cnt}</p>},
+                    SquareState::BlackLegal(cnt) => html! {<p class="stone legal" {onclick}>{cnt}</p>},
+                    SquareState::WhiteLegal(cnt) => html! {<p class="stone legal" {onclick}>{cnt}</p>},
                     SquareState::Empty => html! {<p class="stone empty"></p>},
                 }
             }

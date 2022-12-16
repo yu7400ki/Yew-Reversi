@@ -25,7 +25,12 @@ impl BoardBehavior for BitBoard {
     }
 
     fn move_disc(&self, coordinate: &Coordinate, turn: &Turn) -> BitBoard {
-        self.clone()
+        let mut new_board = self.clone();
+
+        new_board.flip(coordinate, turn);
+        new_board.update_legal();
+
+        new_board
     }
 
     fn is_legal(&self, coordinate: &Coordinate, turn: &Turn) -> bool {
@@ -57,9 +62,9 @@ impl BoardBehavior for BitBoard {
         }
     }
 
-    fn to_vec(&self, turn: &Turn) -> Vec<SquareState> {
+    fn to_vec(&self) -> Vec<SquareState> {
         (0..64)
-            .map(|i| self.get_square_state(&Coordinate::from(i), turn))
+            .map(|i| self.get_square_state(&Coordinate::from(i)))
             .collect()
     }
 
@@ -83,13 +88,17 @@ impl BoardBehavior for BitBoard {
 }
 
 impl BitBoard {
-    fn get_square_state(&self, coordinate: &Coordinate, turn: &Turn) -> SquareState {
+    fn get_square_state(&self, coordinate: &Coordinate) -> SquareState {
         if self.is_black(coordinate) {
             SquareState::Black
         } else if self.is_white(coordinate) {
             SquareState::White
-        } else if self.is_legal(coordinate, turn) {
-            SquareState::Legal(0)
+        } else if self.is_legal(coordinate, &Turn::Black) {
+            let flips = self.enumerate_flip(coordinate, &Turn::Black);
+            SquareState::BlackLegal(flips.count_ones())
+        } else if self.is_legal(coordinate, &Turn::White) {
+            let flips = self.enumerate_flip(coordinate, &Turn::White);
+            SquareState::WhiteLegal(flips.count_ones())
         } else {
             SquareState::Empty
         }
@@ -101,6 +110,86 @@ impl BitBoard {
 
     fn is_white(&self, coordinate: &Coordinate) -> bool {
         self.white_board & coordinate.to_mask() != 0
+    }
+
+    fn enumerate_flip(&self, coordinate: &Coordinate, turn: &Turn) -> u64 {
+        let (own, opponent) = match turn {
+            Turn::Black => (self.black_board, self.white_board),
+            Turn::White => (self.white_board, self.black_board),
+        };
+
+        let lookup = |direction: Direction| -> u64 {
+            let shift = direction.to_shift();
+            let result = BitBoard::lookup(coordinate.to_mask(), opponent, &direction);
+            match own & shift(result) {
+                0 => 0,
+                _ => result,
+            }
+        };
+
+        let mut result = lookup(Direction::Up);
+        result |= lookup(Direction::Down);
+        result |= lookup(Direction::Left);
+        result |= lookup(Direction::Right);
+        result |= lookup(Direction::UpLeft);
+        result |= lookup(Direction::UpRight);
+        result |= lookup(Direction::DownLeft);
+        result |= lookup(Direction::DownRight);
+
+        result
+    }
+
+    fn flip(&mut self, coordinate: &Coordinate, turn: &Turn) {
+        let flip = self.enumerate_flip(coordinate, turn);
+        let mask = coordinate.to_mask();
+        match turn {
+            Turn::Black => {
+                self.black_board |= mask | flip;
+                self.white_board ^= flip;
+            }
+            Turn::White => {
+                self.white_board |= mask | flip;
+                self.black_board ^= flip;
+            }
+        }
+    }
+
+    fn update_legal(&mut self) {
+        let blank = !(self.black_board | self.white_board);
+
+        let generate = |own: u64, opponent: u64| -> u64 {
+            let lookup = |direction: Direction| -> u64 {
+                let shift = direction.to_shift();
+                let result = BitBoard::lookup(own, opponent, &direction);
+                blank & shift(result)
+            };
+
+            let mut result = lookup(Direction::Up);
+            result |= lookup(Direction::Down);
+            result |= lookup(Direction::Left);
+            result |= lookup(Direction::Right);
+            result |= lookup(Direction::UpLeft);
+            result |= lookup(Direction::UpRight);
+            result |= lookup(Direction::DownLeft);
+            result |= lookup(Direction::DownRight);
+
+            result
+        };
+
+        self.legal_black = generate(self.black_board, self.white_board);
+        self.legal_white = generate(self.white_board, self.black_board);
+    }
+
+    fn lookup(own: u64, opponent: u64, direction: &Direction) -> u64 {
+        let shift = direction.to_shift();
+        let mask = opponent & direction.to_mask();
+        let mut result = mask & shift(own);
+        result = result | mask & shift(result);
+        result = result | mask & shift(result);
+        result = result | mask & shift(result);
+        result = result | mask & shift(result);
+        result = result | mask & shift(result);
+        result
     }
 }
 

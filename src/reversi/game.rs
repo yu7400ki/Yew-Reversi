@@ -1,4 +1,4 @@
-use crate::reversi::{BoardBehavior, Coordinate, SquareState, Turn};
+use crate::reversi::{BoardBehavior, Coordinate, Turn};
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct Game<T>
@@ -41,9 +41,8 @@ where
     }
 
     pub fn search(&self) -> Option<Coordinate> {
-        let coordinate = Coordinate::from(0);
-
-        coordinate
+        (0..64)
+            .map(|i| Coordinate::from(i))
             .filter(|c| self.board.is_legal(c, &self.turn))
             .map(|c| {
                 let new_board = self.board.move_disc(&c, &self.turn);
@@ -51,10 +50,6 @@ where
             })
             .max_by_key(|(_, score)| *score)
             .map(|(c, _)| c)
-    }
-
-    pub fn to_vec(&self) -> Vec<SquareState> {
-        self.board.to_vec(&self.turn)
     }
 
     fn change_turn(&mut self) {
