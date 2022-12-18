@@ -19,9 +19,9 @@ where
 
     html! {
         <div id="status">
-            <p>{format!("●:{}", game.board.count_black())}</p>
+            <p>{format!("●:{}", game.board.count_disc(Turn::Black))}</p>
             <p>{format!("ターン:{}", if game.turn == Turn::Black {"●"} else {"○"})}</p>
-            <p>{format!("○:{}", game.board.count_white())}</p>
+            <p>{format!("○:{}", game.board.count_disc(Turn::White))}</p>
         </div>
     }
 }

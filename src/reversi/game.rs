@@ -26,15 +26,14 @@ where
         }
     }
 
-    pub fn move_disc(&self, coordinate: &Coordinate) -> Game<T> {
+    pub fn move_disc(&self, coordinate: Coordinate) -> Game<T> {
         let mut new_game = self.clone();
 
-        if !new_game.board.is_legal(coordinate, &new_game.turn) {
-            return new_game;
+        if !new_game.board.is_legal(coordinate, new_game.turn) {
+            panic!("Illegal move");
         }
 
-        new_game.board = new_game.board.move_disc(coordinate, &new_game.turn);
-        new_game.pass = false;
+        new_game.board = new_game.board.move_disc(coordinate, new_game.turn);
         new_game.change_turn();
 
         new_game
@@ -43,22 +42,31 @@ where
     pub fn search(&self) -> Option<Coordinate> {
         (0..64)
             .map(|i| Coordinate::from(i))
-            .filter(|c| self.board.is_legal(c, &self.turn))
-            .map(|c| {
-                let new_board = self.board.move_disc(&c, &self.turn);
-                (c, new_board.evaluate(&self.turn))
-            })
+            .filter(|&coordinate| self.board.is_legal(coordinate, self.turn))
+            .map(|coordinate| (coordinate, self.predict(coordinate)))
             .max_by_key(|(_, score)| *score)
-            .map(|(c, _)| c)
+            .map(|(coordinate, _)| coordinate)
+    }
+
+    fn predict(&self, coordinate: Coordinate) -> i16 {
+        let board = self.board;
+
+        if !board.is_legal(coordinate, self.turn) {
+            return i16::MIN;
+        }
+
+        let new_board = board.move_disc(coordinate, self.turn);
+        new_board.evaluate(self.turn)
     }
 
     fn change_turn(&mut self) {
         self.turn = self.turn.opposite();
+        self.pass = false;
 
         if self.board.is_end() {
             self.end = true;
             self.winner = self.board.get_winner();
-        } else if !self.board.is_able_to_move(&self.turn) {
+        } else if !self.board.is_able_to_move(self.turn) {
             self.pass = true;
             self.turn = self.turn.opposite();
         }

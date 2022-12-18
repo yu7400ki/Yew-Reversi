@@ -1,4 +1,3 @@
-use gloo_console::log;
 use gloo_dialogs::alert;
 use yew::{function_component, html, Callback, Html, Properties, UseStateHandle};
 
@@ -20,39 +19,23 @@ where
 {
     let board_state = &props.board_state;
     let game = *props.board_state;
-    let discs = game.board.to_vec().into_iter().map(|s| {
-        match s {
-            SquareState::BlackLegal(_) => {
-                match game.turn {
-                    Turn::Black => s,
-                    Turn::White => SquareState::Empty,
-                }
-            }
-            SquareState::WhiteLegal(_) => {
-                match game.turn {
-                    Turn::Black => SquareState::Empty,
-                    Turn::White => s,
-                }
-            }
-            _ => s,
-        }
-    }).collect::<Vec<_>>();
+    let discs = game.board.to_vec(game.turn);
 
     let on_move_disc = {
         let board_state = board_state.clone();
-        Callback::from(move |pos: Coordinate| {
-            let mut next_board = game.move_disc(&pos);
+        let game = *board_state;
+        Callback::from(move |coordinate: Coordinate| {
+            let mut next_board = game.move_disc(coordinate);
 
             if next_board.pass {
                 alert("CPUのターンがパスされます。");
             } else if !next_board.end {
                 let cpu = next_board.search().unwrap();
-                next_board = next_board.move_disc(&cpu);
-                log!("CPU: ", cpu.to_int());
+                next_board = next_board.move_disc(cpu);
                 while next_board.pass {
                     alert("あなたのターンがパスされます。");
                     let cpu = next_board.search().unwrap();
-                    next_board = next_board.move_disc(&cpu);
+                    next_board = next_board.move_disc(cpu);
                 }
             }
 
@@ -61,8 +44,8 @@ where
                 alert(
                     format!(
                         "黒: {} 白: {}",
-                        next_board.board.count_black(),
-                        next_board.board.count_white()
+                        next_board.board.count_disc(Turn::Black),
+                        next_board.board.count_disc(Turn::White)
                     )
                     .as_str(),
                 );

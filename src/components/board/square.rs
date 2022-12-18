@@ -11,15 +11,15 @@ pub struct SquareProps {
 
 #[function_component(Square)]
 pub fn cell(props: &SquareProps) -> Html {
-    let coordinate = &props.coordinate;
-    let disc = &props.square_state;
-    let on_move_stone = &props.on_move_disc;
+    let coordinate = props.coordinate;
+    let disc = props.square_state;
+    let on_move_disc = &props.on_move_disc;
 
     let onclick = {
-        let on_move_stone = on_move_stone.clone();
+        let on_move_disc = on_move_disc.clone();
         let coordinate = coordinate.clone();
         Callback::from(move |_: MouseEvent| {
-            on_move_stone.emit(coordinate);
+            on_move_disc.emit(coordinate);
         })
     };
 
@@ -29,8 +29,7 @@ pub fn cell(props: &SquareProps) -> Html {
                 match disc {
                     SquareState::Black => html! {<p class="stone black">{"●"}</p>},
                     SquareState::White => html! {<p class="stone white">{"●"}</p>},
-                    SquareState::BlackLegal(cnt) => html! {<p class="stone legal" {onclick}>{cnt}</p>},
-                    SquareState::WhiteLegal(cnt) => html! {<p class="stone legal" {onclick}>{cnt}</p>},
+                    SquareState::Legal(cnt) => html! {<p class="stone legal" {onclick}>{cnt}</p>},
                     SquareState::Empty => html! {<p class="stone empty"></p>},
                 }
             }

@@ -2,7 +2,6 @@
 pub enum SquareState {
     Black,
     White,
-    BlackLegal(u32),
-    WhiteLegal(u32),
+    Legal(u32),
     Empty,
 }

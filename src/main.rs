@@ -5,7 +5,6 @@ use crate::components::board::Board;
 use crate::components::status::Status;
 use crate::reversi::{BitBoard, BoardBehavior, Game};
 
-mod bitboard;
 mod components;
 mod reversi;
 
@@ -20,9 +19,9 @@ fn app() -> Html {
             let game = *board_state;
             move |_| {
                 let rand = rand::thread_rng().gen::<f64>();
-                if rand > 1.0 {
+                if rand > 0.5 {
                     let cpu = game.search().unwrap();
-                    let next_board = game.move_disc(&cpu);
+                    let next_board = game.move_disc(cpu);
                     board_state.set(next_board);
                 }
                 || ()
